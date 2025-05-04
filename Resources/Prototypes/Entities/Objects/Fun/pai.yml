@@ -93,6 +93,7 @@
       components:
         - SecretStash
         - WrappedParcel
+  - type: Polymorphable
 
 - type: entity
   parent: [ PersonalAI, BaseSyndicateContraband]
@@ -208,3 +209,17 @@
       itemIconStyle: NoItem
       event: !type:OpenUiActionEvent
         key: enum.StationMapUiKey.Key
+
+- type: entity
+  id: ActionPAIPolymorphBorgi
+  name: Borgi Form
+  description: Become your owner's favorite dog and always follow him.
+  components:
+  - type: InstantAction
+    useDelay: 300
+    event: !type:PolymorphActionEvent
+      protoId: PaiBorgi
+    itemIconStyle: NoItem
+    icon:
+      sprite: Mobs/Silicon/PaiAnimals/borgi.rsi
+      state: icon
