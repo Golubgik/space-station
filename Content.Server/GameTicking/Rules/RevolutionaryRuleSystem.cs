@@ -11,6 +11,8 @@ using Content.Server.Roles;
 using Content.Server.RoundEnd;
 using Content.Server.Shuttles.Systems;
 using Content.Server.Station.Systems;
+using Content.Shared.Antag;
+using Content.Shared.Cuffs.Components;
 using Content.Shared.Database;
 using Content.Shared.Flash;
 using Content.Shared.GameTicking.Components;
@@ -26,10 +28,12 @@ using Content.Shared.Revolutionary;
 using Content.Shared.Revolutionary.Components;
 using Content.Shared.Roles.Components;
 using Content.Shared.Stunnable;
+using Content.Shared.Revolutionary.Components;
+using Content.Shared.Roles.Components;
+using Content.Shared.Stunnable;
+using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
-using Content.Shared.Cuffs.Components;
-using Robust.Shared.Player;
 
 namespace Content.Server.GameTicking.Rules;
 
@@ -52,10 +56,6 @@ public sealed partial class RevolutionaryRuleSystem : GameRuleSystem<Revolutiona
     [Dependency] private RoundEndSystem _roundEnd = default!;
     [Dependency] private SharedStunSystem _stun = default!;
     [Dependency] private StationSystem _stationSystem = default!;
-
-    //Used in OnPostFlash, no reference to the rule component is available
-    public readonly ProtoId<NpcFactionPrototype> RevolutionaryNpcFaction = "Revolutionary";
-    public readonly ProtoId<NpcFactionPrototype> RevPrototypeId = "Rev";
 
     public override void Initialize()
     {
@@ -141,22 +141,16 @@ public sealed partial class RevolutionaryRuleSystem : GameRuleSystem<Revolutiona
         if (!_mind.TryGetMind(ev.Target, out var mindId, out var mind) && !alwaysConvertible)
             return;
 
-        if (!HasComp<HumanoidProfileComponent>(ev.Target) &&
-            !alwaysConvertible ||
-            !_mobState.IsAlive(ev.Target) ||
-            !HasComp<RevolutionaryConverterComponent>(ev.Used))
-        {
-            return;
-        }
-
-        var attemptConvertEv = new AttemptConvertRevolutionaryEvent();
-        RaiseLocalEvent(ev.Target, ref attemptConvertEv);
-
-        if (attemptConvertEv.Cancelled)
+        if (mind == null)
             return;
 
-        _npcFaction.AddFaction(ev.Target, RevolutionaryNpcFaction);
-        var revComp = EnsureComp<RevolutionaryComponent>(ev.Target);
+        if (!HasComp<HumanoidProfileComponent>(ev.Target) && !alwaysConvertible || !_mobState.IsAlive(ev.Target))
+            return;
+
+        if (!_prototype.Resolve(comp.RevolutionaryLoadout, out var loadout))
+            return;
+
+        _antag.TryMakeSimpleAntag((mindId, mind), loadout, ev.Target);
 
         if (ev.User != null)
         {
@@ -173,14 +167,6 @@ public sealed partial class RevolutionaryRuleSystem : GameRuleSystem<Revolutiona
                 }
             }
         }
-
-        if (mindId == default || !_role.MindHasRole<RevolutionaryRoleComponent>(mindId))
-        {
-            _role.MindAddRole(mindId, "MindRoleRevolutionary");
-        }
-
-        if (mind is { UserId: not null } && _player.TryGetSessionById(mind.UserId, out var session))
-            _antag.SendBriefing(session, Loc.GetString("rev-role-greeting"), Color.Red, revComp.RevStartSound);
     }
 
     //TODO: Enemies of the revolution
@@ -236,17 +222,14 @@ public sealed partial class RevolutionaryRuleSystem : GameRuleSystem<Revolutiona
                 if (HasComp<HeadRevolutionaryComponent>(uid))
                     continue;
 
-                _npcFaction.RemoveFaction(uid, RevolutionaryNpcFaction);
                 _stun.TryUpdateParalyzeDuration(uid, stunTime);
-                RemCompDeferred<RevolutionaryComponent>(uid);
                 _popup.PopupEntity(Loc.GetString("rev-break-control", ("name", Identity.Entity(uid, EntityManager))), uid);
                 _adminLogManager.Add(LogType.Mind, LogImpact.Medium, $"{ToPrettyString(uid)} was deconverted due to all Head Revolutionaries dying.");
 
                 if (!_mind.TryGetMind(uid, out var mindId, out var mind, mc))
                     continue;
 
-                // remove their antag role
-                _role.MindRemoveRole<RevolutionaryRoleComponent>(mindId);
+                _antag.TryRemoveAntag((mindId, mind), "Revolutionary", true);
 
                 // make it very obvious to the rev they've been deconverted since
                 // they may not see the popup due to antag and/or new player tunnel vision
