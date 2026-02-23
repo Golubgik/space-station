@@ -788,7 +788,16 @@ public sealed partial class AntagSelectionSystem : GameRuleSystem<AntagSelection
             $"Game rule {ToPrettyString(gameRule)}, failed to pre-assign {player.Name} to antag {prototype.ID}");
 
         // The following is where we apply components, equipment, and other changes to our antagonist entity.
-        EntityManager.AddComponents(antag, prototype.Components);
+        _ent.AddComponents(antag, loadout.AddComponents);
+
+        _ent.RemoveComponents(antag, loadout.RemoveComponents);
+
+        _npcFaction.AddFactions(antag, loadout.AddFactions);
+
+        foreach (var faction in antagData.RemoveFactions)
+        {
+            _npcFaction.RemoveFaction(antagData.AntagEntity, faction.Id);
+        }
 
         // Equip the entity's RoleLoadout and LoadoutGroup
         List<ProtoId<StartingGearPrototype>> gear = new();
