@@ -206,19 +206,6 @@
       proto: TraitorReinforcement
 
 - type: entity
-  id: TraitorReinforcement
-  parent: BaseTraitorRule
-  components:
-  - type: TraitorRule
-    giveUplink: false
-    giveCodewords: false # It would actually give them a different set of codewords than the regular traitors, anyway
-    giveBriefing: false
-  - type: AntagSelection
-    definitions:
-    - prefRoles: [ Traitor ]
-      antagLoadout: TraitorReinforcement
-
-- type: entity
   id: Changeling
   parent: [BaseGameRule, BaseRoundstartAntagRule]
   components:

@@ -388,19 +388,19 @@ public sealed partial class AntagSelectionSystem
 
 
 
-    public AntagData CreateAntagData(AntagLoadoutPrototype antag, EntityUid player)
+    public AntagData CreateAntagData(AntagSpecifierPrototype antag, EntityUid player)
     {
         var playerComponents = antag.RemoveComponents;
-        foreach (var (name, entry) in antag.AddComponents)
+        foreach (var (name, entry) in antag.Components)
         {
             if (antag.RemoveComponents.ContainsKey(name))
                 continue;
 
             var compType = entry.Component.GetType();
-            if (_ent.HasComponent(player, type: compType))
+            if (EntityManager.HasComponent(player, type: compType))
                 playerComponents.Add(name, entry);
         }
-        return new AntagData { MindRoles = antag.MindRoles, AddAntagComponents = antag.AddComponents, PlayerComponents = playerComponents, AntagEntity = player, AddFactions = antag.AddFactions, RemoveFactions = antag.RemoveFactions };
+        return new AntagData { MindRoles = antag.MindRoles, AddAntagComponents = antag.Components, PlayerComponents = playerComponents, AntagEntity = player, AddFactions = antag.AddFactions, RemoveFactions = antag.RemoveFactions };
     }
 
     /// <summary>

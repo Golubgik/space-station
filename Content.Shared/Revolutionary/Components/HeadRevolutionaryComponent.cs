@@ -27,7 +27,7 @@ public sealed partial class HeadRevolutionaryComponent : Component
     /// Loadout given to revolutionaries after conversion
     /// </summary>
     [DataField]
-    public ProtoId<AntagLoadoutPrototype> RevolutionaryLoadout = "Revolutionary";
+    public ProtoId<AntagSpecifierPrototype> RevolutionaryLoadout = "BaseRev";
 
     public override bool SessionSpecific => true;
 }

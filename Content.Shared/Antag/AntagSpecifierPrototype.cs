@@ -1,3 +1,4 @@
+using Content.Shared.NPC.Prototypes;
 using Content.Shared.Preferences.Loadouts;
 using Content.Shared.Roles;
 using Content.Shared.Whitelist;
@@ -89,6 +90,24 @@ public sealed partial class AntagSpecifierPrototype : IPrototype, IInheritingPro
     [DataField]
     [AlwaysPushInheritance]
     public ComponentRegistry Components = new();
+
+    /// <summary>
+    /// Components removed to the player.
+    /// </summary>
+    [DataField]
+    public ComponentRegistry RemoveComponents = new();
+
+    /// <summary>
+    /// NPCFactions added to the player.
+    /// </summary>
+    [DataField]
+    public HashSet<ProtoId<NpcFactionPrototype>> AddFactions = new();
+
+    /// <summary>
+    /// NPCFactions removed to the player.
+    /// </summary>
+    [DataField]
+    public HashSet<ProtoId<NpcFactionPrototype>> RemoveFactions = new();
 
     /// <summary>
     /// Components added to the player's mind.

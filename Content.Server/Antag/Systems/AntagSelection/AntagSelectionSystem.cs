@@ -1,9 +1,5 @@
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using Content.Server.Administration.Managers;
 using Content.Server.Antag.Components;
-using Content.Server.Antag.Systems.AntagSelection;
 using Content.Server.Chat.Managers;
 using Content.Server.GameTicking;
 using Content.Server.GameTicking.Events;
@@ -24,12 +20,13 @@ using Content.Shared.Database;
 using Content.Shared.Follower;
 using Content.Shared.GameTicking;
 using Content.Shared.GameTicking.Components;
-using Content.Shared.Random.Helpers;
 using Content.Shared.Ghost;
 using Content.Shared.Humanoid;
 using Content.Shared.Mind;
 using Content.Shared.NPC.Systems;
 using Content.Shared.Players;
+using Content.Shared.Preferences.Loadouts;
+using Content.Shared.Random.Helpers;
 using Content.Shared.Roles;
 using Content.Shared.Roles.Components;
 using Content.Shared.Whitelist;
@@ -41,8 +38,12 @@ using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 using Robust.Shared.Utility;
-using static Content.Server.Antag.Components.AntagSelectionTime;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Linq;
+using static Content.Server.Antag.Components.AntagSelectionTime;
 
 namespace Content.Server.Antag;
 
@@ -79,6 +80,7 @@ public sealed partial class AntagSelectionSystem : GameRuleSystem<AntagSelection
     [Dependency] private PlayTimeTrackingSystem _playTime = default!;
     [Dependency] private RoleSystem _role = default!;
     [Dependency] private TransformSystem _transform = default!;
+    [Dependency] private NpcFactionSystem _npcFaction = default!;
 
     // arbitrary random number to give late joining some mild interest.
     public const float LateJoinRandomChance = 0.5f;
@@ -788,15 +790,14 @@ public sealed partial class AntagSelectionSystem : GameRuleSystem<AntagSelection
             $"Game rule {ToPrettyString(gameRule)}, failed to pre-assign {player.Name} to antag {prototype.ID}");
 
         // The following is where we apply components, equipment, and other changes to our antagonist entity.
-        _ent.AddComponents(antag, loadout.AddComponents);
+        EntityManager.AddComponents(antag, prototype.Components);
+        EntityManager.RemoveComponents(antag, prototype.RemoveComponents);
 
-        _ent.RemoveComponents(antag, loadout.RemoveComponents);
+        _npcFaction.AddFactions(antag, prototype.AddFactions);
 
-        _npcFaction.AddFactions(antag, loadout.AddFactions);
-
-        foreach (var faction in antagData.RemoveFactions)
+        foreach (var faction in prototype.RemoveFactions)
         {
-            _npcFaction.RemoveFaction(antagData.AntagEntity, faction.Id);
+            _npcFaction.RemoveFaction(antag, faction.Id);
         }
 
         // Equip the entity's RoleLoadout and LoadoutGroup
@@ -818,6 +819,17 @@ public sealed partial class AntagSelectionSystem : GameRuleSystem<AntagSelection
         _adminLogger.Add(LogType.AntagSelection, $"Assigned {ToPrettyString(antag):target}, mind {ToPrettyString(mind):target} as antagonist: {ToPrettyString(gameRule):user}");
 
         SendBriefing(player, prototype.Briefing);
+
+        AntagData antagData = CreateAntagData(prototype, antag);
+
+        if (!TryComp<AntagDataComponent>(mind, out var dataComp))
+        {
+            dataComp = EntityManager.AddComponent<AntagDataComponent>(mind);
+        }
+
+        // If there is already an antagonist, remove it and add a new one
+        if (dataComp.Antagonists.ContainsKey(prototype.ID))
+            TryRemoveAntag((antag, mindComp!), prototype.ID);
 
         var afterEv = new AfterAntagEntitySelectedEvent(player, antag, gameRule, prototype);
         RaiseLocalEvent(gameRule, ref afterEv, true);
@@ -844,6 +856,89 @@ public sealed partial class AntagSelectionSystem : GameRuleSystem<AntagSelection
 
         args.Minds = GetAntagIdentities(ent.AsNullable()).ToList();
         args.AgentName = Loc.GetString(name);
+    }
+
+    public bool TryRemoveAntag(Entity<MindComponent> playerMind, ProtoId<AntagSpecifierPrototype> key, bool removeAntagComponents = true)
+    {
+
+        if (!TryComp<AntagDataComponent>(playerMind, out var dataComp))
+            return false;
+
+        if (!dataComp.Antagonists.TryGetValue(key, out var antagData))
+            return false;
+
+        dataComp.Antagonists.Remove(key);
+
+        if (antagData.MindRoles != null)
+        {
+            foreach (var roleId in antagData.MindRoles)
+            {
+                EntProtoId<MindRoleComponent> role = new(roleId.Id);
+                _role.MindRemoveRole(playerMind.Owner, role);
+            }
+        }
+
+        if (playerMind.Comp.OwnedEntity == antagData.AntagEntity && removeAntagComponents)
+        {
+            EntityManager.RemoveComponents(antagData.AntagEntity, antagData.AddAntagComponents);
+
+            EntityManager.AddComponents(antagData.AntagEntity, antagData.PlayerComponents);
+
+            foreach (var faction in antagData.AddFactions)
+            {
+                _npcFaction.RemoveFaction(antagData.AntagEntity, faction.Id);
+            }
+
+            _npcFaction.AddFactions(antagData.AntagEntity, antagData.RemoveFactions);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Creates a simple antagonist without gameRule
+    /// </summary>
+    /// <param name="playerMind">The mind of a person who will become an antagonist, if he doesn't have a body, he won't become an antagonist</param>
+    /// <param name="prototype">The antagonist's loadout that we will give to the player</param>
+    /// <returns></returns>
+    public bool TryMakeSimpleAntag(Entity<MindComponent> playerMind, AntagSpecifierPrototype prototype)
+    {
+        var antag = playerMind.Comp.OwnedEntity;
+
+        if (!IsEntityValid(playerMind.Comp.OwnedEntity, prototype))
+            return false;
+
+        if (antag == null)
+            return false;
+
+        if (TryComp<AntagDataComponent>(playerMind, out var dataComp))
+        {
+            if (dataComp.Antagonists.ContainsKey(prototype.ID))
+                return false;
+        }
+        else
+            dataComp = EntityManager.AddComponent<AntagDataComponent>(playerMind);
+
+        EntityManager.AddComponents(antag.Value, prototype.Components);
+        EntityManager.RemoveComponents(antag.Value, prototype.RemoveComponents);
+
+        _npcFaction.AddFactions(antag.Value, prototype.AddFactions);
+
+        foreach (var faction in prototype.RemoveFactions)
+        {
+            _npcFaction.RemoveFaction(antag.Value, faction.Id);
+        }
+
+        // Equip the entity's RoleLoadout and LoadoutGroup
+        List<ProtoId<StartingGearPrototype>> gear = new();
+        if (prototype.StartingGear is not null)
+            gear.Add(prototype.StartingGear.Value);
+
+        _loadout.Equip(antag.Value, gear, prototype.RoleLoadout);
+
+        _role.MindAddRoles(playerMind, prototype.MindRoles, silent: true);
+
+        return true;
     }
 }
 

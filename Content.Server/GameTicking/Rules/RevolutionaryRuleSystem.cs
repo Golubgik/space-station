@@ -11,7 +11,6 @@ using Content.Server.Roles;
 using Content.Server.RoundEnd;
 using Content.Server.Shuttles.Systems;
 using Content.Server.Station.Systems;
-using Content.Shared.Antag;
 using Content.Shared.Cuffs.Components;
 using Content.Shared.Database;
 using Content.Shared.Flash;
@@ -22,12 +21,7 @@ using Content.Shared.Mind.Components;
 using Content.Shared.Mobs;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Mobs.Systems;
-using Content.Shared.NPC.Prototypes;
 using Content.Shared.NPC.Systems;
-using Content.Shared.Revolutionary;
-using Content.Shared.Revolutionary.Components;
-using Content.Shared.Roles.Components;
-using Content.Shared.Stunnable;
 using Content.Shared.Revolutionary.Components;
 using Content.Shared.Roles.Components;
 using Content.Shared.Stunnable;
@@ -56,6 +50,7 @@ public sealed partial class RevolutionaryRuleSystem : GameRuleSystem<Revolutiona
     [Dependency] private RoundEndSystem _roundEnd = default!;
     [Dependency] private SharedStunSystem _stun = default!;
     [Dependency] private StationSystem _stationSystem = default!;
+    [Dependency] private readonly IPrototypeManager _prototype = default!;
 
     public override void Initialize()
     {
@@ -150,7 +145,7 @@ public sealed partial class RevolutionaryRuleSystem : GameRuleSystem<Revolutiona
         if (!_prototype.Resolve(comp.RevolutionaryLoadout, out var loadout))
             return;
 
-        _antag.TryMakeSimpleAntag((mindId, mind), loadout, ev.Target);
+        _antag.TryMakeSimpleAntag((mindId, mind), loadout);
 
         if (ev.User != null)
         {

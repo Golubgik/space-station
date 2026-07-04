@@ -7,5 +7,5 @@ namespace Content.Shared.Antag;
 public sealed partial class AntagDataComponent : Component
 {
     [DataField]
-    public Dictionary<ProtoId<AntagLoadoutPrototype>, AntagData> Antagonists = new();
+    public Dictionary<ProtoId<AntagSpecifierPrototype>, AntagData> Antagonists = new();
 }
