@@ -383,8 +383,13 @@ public sealed partial class AntagSelectionSystem
         }
     }
 
+    /// <summary>
+    /// All information about the antagonist and some data about the entity before he became one
+    /// Must be created before you apply the AntagSpecifier to the Entity.
+    /// </summary>
     public AntagData CreateAntagData(AntagSpecifierPrototype antag, EntityUid player)
     {
+        // Record all the components that are being deleted and modified
         var playerComponents = new ComponentRegistry(antag.RemoveComponents);
         foreach (var (name, entry) in antag.Components)
         {
@@ -392,6 +397,8 @@ public sealed partial class AntagSelectionSystem
                 continue;
 
             var compType = entry.Component.GetType();
+
+            // We write down the component, if we have it, and it is issued to the antagonists, since then it will be overwritten.
             if (EntityManager.HasComponent(player, type: compType))
                 playerComponents.Add(name, entry);
         }
