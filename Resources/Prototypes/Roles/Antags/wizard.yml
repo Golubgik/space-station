@@ -40,5 +40,7 @@
     nameFormat: name-format-wizard
   mindRoles:
   - MindRoleWizard
+  addFactions: 
+  - Wizard
 
 # See wizard_startinggear for wiz start gear options

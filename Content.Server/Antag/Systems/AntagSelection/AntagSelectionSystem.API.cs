@@ -1,4 +1,3 @@
-using System.Linq;
 using Content.Server.Antag.Components;
 using Content.Server.Antag.Selectors;
 using Content.Shared.Antag;
@@ -15,6 +14,8 @@ using Robust.Shared.Prototypes;
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Linq;
+using static Robust.Shared.Prototypes.EntityPrototype;
 
 namespace Content.Server.Antag;
 
@@ -386,11 +387,9 @@ public sealed partial class AntagSelectionSystem
         }
     }
 
-
-
     public AntagData CreateAntagData(AntagSpecifierPrototype antag, EntityUid player)
     {
-        var playerComponents = antag.RemoveComponents;
+        var playerComponents = new ComponentRegistry(antag.RemoveComponents);
         foreach (var (name, entry) in antag.Components)
         {
             if (antag.RemoveComponents.ContainsKey(name))
@@ -630,13 +629,14 @@ public sealed partial class AntagSelectionSystem
     /// You can only get one antag per game rule so it's fine to ignore by uid.</param>
     /// <returns>True if there is a game rule giving this player antag status</returns>
     [PublicAPI]
-    public bool IsAssignedAntag(ICommonSession player, params HashSet<EntityUid> ignored)
+    public bool IsAssignedAntag(ICommonSession player, params HashSet<EntityUid?> ignored)
     {
         // First check our mindroles.
         if (_role.PlayerIsAntagonist(player))
             return true;
 
         var query = QueryAllRules();
+
         while (query.MoveNext(out var uid, out var comp, out _))
         {
             if (ignored.Contains(uid) || HasComp<EndedGameRuleComponent>(uid))
@@ -660,7 +660,7 @@ public sealed partial class AntagSelectionSystem
     /// <param name="ignored">Game rule entities we're ignoring.</param>
     /// <returns>True if there is a game rule giving this player antag status that is exclusive with other antags</returns>
     [PublicAPI]
-    public bool IsAssignedExclusiveAntag(ICommonSession player, params HashSet<EntityUid> ignored)
+    public bool IsAssignedExclusiveAntag(ICommonSession player, params HashSet<EntityUid?> ignored)
     {
         // First check our mindroles.
         if (_role.MindIsExclusiveAntagonist(player.AttachedEntity))

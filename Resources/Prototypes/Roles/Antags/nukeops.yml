@@ -48,9 +48,10 @@
   - RoleSurvivalNukie
   components:
   - type: NukeOperative
-  - type: NpcFactionMember
-    factions:
-    - Syndicate
+  addFactions: 
+  - Syndicate
+  removeFactions:
+  - NanoTrasen
 
 - type: antagSpecifier
   parent: BaseNukeops

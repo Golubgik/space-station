@@ -1,17 +1,19 @@
-﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using Content.Server.Antag.Components;
 using Content.Server.GameTicking.Rules.Components;
 using Content.Shared.Antag;
 using Content.Shared.Database;
 using Content.Shared.Ghost;
 using Content.Shared.Humanoid;
+using Content.Shared.Mind;
 using Content.Shared.Players;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore;
 using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using static Content.Server.Antag.Components.AntagSelectionTime;
 
 namespace Content.Server.Antag;
@@ -66,9 +68,25 @@ public sealed partial class AntagSelectionSystem
         return true;
     }
 
+    /// <inhereitdoc cref="CanBeAntag(ICommonSession,ProtoId{AntagSpecifierPrototype},bool)"/>
+    [PublicAPI]
+    public bool CanBeAntag(ICommonSession player,
+        AntagSpecifierPrototype def,
+        bool checkPref = true)
+    {
+        if (!IsSessionValid(player, null, def))
+            return false;
+
+        // Add player to the appropriate antag pool
+        if (checkPref && !TryGetValidAntagPreferences(player, def.PrefRoles))
+            return false;
+
+        return true;
+    }
+
     /// <inhereitdoc cref="IsSessionValid(ICommonSession,Entity{AntagSelectionComponent},ProtoId{AntagSpecifierPrototype})"/>
     public bool IsSessionValid(ICommonSession player,
-        Entity<AntagSelectionComponent> gameRule,
+        Entity<AntagSelectionComponent>? gameRule,
         ProtoId<AntagSpecifierPrototype> def)
     {
         if (!ProtoMan.Resolve(def, out var antag))
@@ -86,7 +104,7 @@ public sealed partial class AntagSelectionSystem
     /// <returns>True if there is nothing stopping this session from becoming this antagonist.</returns>
     [PublicAPI]
     public bool IsSessionValid(ICommonSession player,
-        Entity<AntagSelectionComponent> gameRule,
+        Entity<AntagSelectionComponent>? gameRule,
         AntagSpecifierPrototype def)
     {
         // Cannot be antag if you're not in the game.
@@ -130,6 +148,9 @@ public sealed partial class AntagSelectionSystem
     /// <returns>True if there is nothing stopping this mind entity from being this antag.</returns>
     private bool IsMindValid([NotNullWhen(true)] EntityUid? mind, AntagSpecifierPrototype def)
     {
+        if (mind == null)
+            return false;
+
         // The jobless can always be antag!
         if (!_jobs.MindTryGetJob(mind, out var job))
             return true;
@@ -142,7 +163,20 @@ public sealed partial class AntagSelectionSystem
         if (!def.JobWhitelist?.Contains(job) ?? false)
             return false;
 
+        if (IsMindHasAntag(mind.Value, def))
+            return false;
+
         return true;
+    }
+
+    public bool IsMindHasAntag(Entity<MindComponent?> entity, AntagSpecifierPrototype definition)
+    {
+        if (TryComp<AntagDataComponent>(entity, out var dataComp))
+        {
+            if (dataComp.Antagonists.ContainsKey(definition))
+                return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -225,6 +259,29 @@ public sealed partial class AntagSelectionSystem
             return false;
 
         return TryMakeAntag(gameRule, def, session, checkPref);
+    }
+
+    /// <summary>
+    /// Creating a new antagonist without using the game rules
+    /// Doesn't work for ghosts.
+    /// Use it only if you know what you're doing
+    /// </summary>
+    [PublicAPI]
+    public bool TryMakeAntag(ICommonSession player, ProtoId<AntagSpecifierPrototype> proto, bool checkPref = true)
+    {
+        if (!ProtoMan.Resolve(proto, out var def))
+            return false;
+
+        CanBeAntag(player, def, checkPref);
+
+        if (player.AttachedEntity == null)
+            return false;
+
+        if (!IsEntityValid(player, def))
+            return false;
+
+        InitializeAntag(def, player.AttachedEntity.Value, player);
+        return true;
     }
 
     /// <summary>

@@ -10,7 +10,6 @@
     time: 1h
 
 - type: antagSpecifier
-  abstract: true
   parent: RestrictedAntag
   id: BaseRev
   name: revolutionary
@@ -18,6 +17,19 @@
   - GenericTeamAntagonist # For antag ban purposes
   components:
   - type: Revolutionary
+  briefing:
+    text: rev-role-greeting
+    color: Red
+    sound: "/Audio/Ambience/Antag/headrev_start.ogg"
+  addFactions: 
+  - Revolutionary
+  blacklist: 
+    components:
+    - Revolutionary
+    - MindShield
+    - Zombie
+  mindRoles:
+  - MindRoleRevolutionary
 
 - type: antagSpecifier
   parent: BaseRev

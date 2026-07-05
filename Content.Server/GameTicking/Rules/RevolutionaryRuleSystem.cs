@@ -145,7 +145,8 @@ public sealed partial class RevolutionaryRuleSystem : GameRuleSystem<Revolutiona
         if (!_prototype.Resolve(comp.RevolutionaryLoadout, out var loadout))
             return;
 
-        _antag.TryMakeSimpleAntag((mindId, mind), loadout);
+        if (_player.TryGetSessionByEntity(ev.Target, out var session))
+            _antag.TryMakeAntag(session, loadout);
 
         if (ev.User != null)
         {
@@ -211,20 +212,31 @@ public sealed partial class RevolutionaryRuleSystem : GameRuleSystem<Revolutiona
         // Cuffing Head Revs is not enough - they must be killed.
         if (IsGroupDetainedOrDead(headRevList, false, false, false))
         {
+            var revList = new List<EntityUid>();
             var rev = AllEntityQuery<RevolutionaryComponent, MindContainerComponent>();
-            while (rev.MoveNext(out var uid, out _, out var mc))
+            while (rev.MoveNext(out var uid, out _, out _))
             {
                 if (HasComp<HeadRevolutionaryComponent>(uid))
                     continue;
+                revList.Add(uid);
+            }
 
+            foreach (var uid in revList)
+            {
                 _stun.TryUpdateParalyzeDuration(uid, stunTime);
                 _popup.PopupEntity(Loc.GetString("rev-break-control", ("name", Identity.Entity(uid, EntityManager))), uid);
                 _adminLogManager.Add(LogType.Mind, LogImpact.Medium, $"{ToPrettyString(uid)} was deconverted due to all Head Revolutionaries dying.");
 
-                if (!_mind.TryGetMind(uid, out var mindId, out var mind, mc))
+                if (!_mind.TryGetMind(uid, out var mindId, out var mind))
                     continue;
 
-                _antag.TryRemoveAntag((mindId, mind), "Revolutionary", true);
+                //You can create different types of revolutionaries for each head of revolution, so you'll have to iterate through them.
+                foreach (var headRev in headRevList)
+                {
+                    var antagSpecifier = EntityManager.GetComponent<HeadRevolutionaryComponent>(headRev).RevolutionaryLoadout;
+                    if (_antag.TryRemoveAntag((mindId, mind), antagSpecifier, true))
+                        break;
+                }
 
                 // make it very obvious to the rev they've been deconverted since
                 // they may not see the popup due to antag and/or new player tunnel vision
@@ -233,7 +245,6 @@ public sealed partial class RevolutionaryRuleSystem : GameRuleSystem<Revolutiona
             }
             return true;
         }
-
         return false;
     }
 

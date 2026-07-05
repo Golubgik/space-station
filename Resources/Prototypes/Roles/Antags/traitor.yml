@@ -13,6 +13,8 @@
   abstract: true
   parent: RestrictedAntag
   id: BaseTraitor
+  addFactions: 
+  - Syndicate
 
 - type: antagSpecifier
   parent: BaseTraitor
