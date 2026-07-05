@@ -1,16 +1,19 @@
 using Content.Server.Antag.Components;
 using Content.Server.Antag.Selectors;
+using Content.Server.Database;
 using Content.Shared.Antag;
 using Content.Shared.Chat;
 using Content.Shared.GameTicking.Components;
 using Content.Shared.Ghost;
 using Content.Shared.Mind;
+using Content.Shared.NPC.Prototypes;
 using Content.Shared.Roles;
 using JetBrains.Annotations;
 using Robust.Shared.Audio;
 using Robust.Shared.Enums;
 using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Content.Server.Antag;
@@ -393,7 +396,7 @@ public sealed partial class AntagSelectionSystem
         var playerComponents = new ComponentRegistry(antag.RemoveComponents);
         foreach (var (name, entry) in antag.Components)
         {
-            if (antag.RemoveComponents.ContainsKey(name))
+            if (playerComponents.ContainsKey(name))
                 continue;
 
             var compType = entry.Component.GetType();
@@ -403,6 +406,42 @@ public sealed partial class AntagSelectionSystem
                 playerComponents.Add(name, entry);
         }
         return new AntagData { MindRoles = antag.MindRoles, AddAntagComponents = antag.Components, PlayerComponents = playerComponents, AntagEntity = player, AddFactions = antag.AddFactions, RemoveFactions = antag.RemoveFactions };
+    }
+
+    /// <summary>
+    /// Deletes duplicate items from comparedData in checkingData
+    /// </summary>
+    /// <returns>cleared checkingData</returns>
+    public AntagData ClearAntagData(AntagData checkingData, Dictionary<ProtoId<AntagSpecifierPrototype>, AntagData> comparedData)
+    {
+        var newAntagData = checkingData;
+        foreach ( (var _, var data) in comparedData)
+        {
+            foreach (var comp in data.AddAntagComponents.Keys)
+            {
+                newAntagData.AddAntagComponents.Remove(comp);
+                newAntagData.PlayerComponents.Remove(comp);
+            }
+            foreach (var comp in data.PlayerComponents.Keys)
+            {
+                newAntagData.PlayerComponents.Remove(comp);
+            }
+            foreach (var factions in data.AddFactions)
+            {
+                newAntagData.AddFactions.Remove(factions);
+            }
+            foreach (var factions in data.RemoveFactions)
+            {
+                newAntagData.RemoveFactions.Remove(factions);
+            }
+
+            if (data.MindRoles != null && newAntagData.MindRoles != null)
+                foreach (var roles in data.MindRoles)
+                {
+                    newAntagData.MindRoles.Remove(roles);
+                }
+        }
+        return newAntagData;
     }
 
     /// <summary>

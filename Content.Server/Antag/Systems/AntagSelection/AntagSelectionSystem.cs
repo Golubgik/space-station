@@ -813,6 +813,10 @@ public sealed partial class AntagSelectionSystem : GameRuleSystem<AntagSelection
             dataComp = EntityManager.AddComponent<AntagDataComponent>(mind);
         }
 
+        AntagData antagData = CreateAntagData(prototype, antag);
+
+        dataComp.Antagonists.Add(prototype, antagData);
+
         // If there is already an antagonist, remove it and add a new one
         if (dataComp.Antagonists.ContainsKey(prototype))
             TryRemoveAntag((mind, mindComp), prototype);
@@ -843,10 +847,6 @@ public sealed partial class AntagSelectionSystem : GameRuleSystem<AntagSelection
         _adminLogger.Add(LogType.AntagSelection, $"Assigned {ToPrettyString(antag):target}, mind {ToPrettyString(mind):target} as antagonist: {prototype.ID}");
 
         SendBriefing(player, prototype.Briefing);
-
-        AntagData antagData = CreateAntagData(prototype, antag);
-
-        dataComp.Antagonists.Add(prototype, antagData);
     }
 
     private void AssignMind(Entity<AntagSelectionComponent> gameRule, ProtoId<AntagSpecifierPrototype> proto, EntityUid mind, EntityUid antag)
@@ -881,29 +881,31 @@ public sealed partial class AntagSelectionSystem : GameRuleSystem<AntagSelection
         if (!dataComp.Antagonists.TryGetValue(key, out var antagData))
             return false;
 
-        if (antagData.MindRoles != null)
+        dataComp.Antagonists.Remove(key);
+
+        var delData = CheckAntagData(antagData, dataComp.Antagonists);
+
+        if (delData.MindRoles != null)
         {
-            foreach (var roleId in antagData.MindRoles)
+            foreach (var roleId in delData.MindRoles)
             {
                 EntProtoId<MindRoleComponent> role = new(roleId);
                 _role.MindRemoveRole(playerMind.Owner, role);
             }
         }
 
-        if (playerMind.Comp.OwnedEntity == antagData.AntagEntity && removeAntagComponents)
+        if (playerMind.Comp.OwnedEntity == delData.AntagEntity && removeAntagComponents)
         {
-            EntityManager.RemoveComponents(antagData.AntagEntity, antagData.AddAntagComponents);
-            EntityManager.AddComponents(antagData.AntagEntity, antagData.PlayerComponents);
+            EntityManager.RemoveComponents(delData.AntagEntity, delData.AddAntagComponents);
+            EntityManager.AddComponents(delData.AntagEntity, delData.PlayerComponents);
 
-            foreach (var faction in antagData.AddFactions)
+            foreach (var faction in delData.AddFactions)
             {
-                _npcFaction.RemoveFaction(antagData.AntagEntity, faction);
+                _npcFaction.RemoveFaction(delData.AntagEntity, faction);
             }
 
-            _npcFaction.AddFactions(antagData.AntagEntity, antagData.RemoveFactions);
+            _npcFaction.AddFactions(delData.AntagEntity, delData.RemoveFactions);
         }
-
-        dataComp.Antagonists.Remove(key);
 
         return true;
     }

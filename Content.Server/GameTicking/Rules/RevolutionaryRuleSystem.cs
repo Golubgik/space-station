@@ -151,10 +151,12 @@ public sealed partial class RevolutionaryRuleSystem : GameRuleSystem<Revolutiona
             return;
 
         if (_player.TryGetSessionByEntity(ev.Target, out var session))
-            _antag.TryMakeAntag(session, loadout);
+        {
+            if (_antag.TryMakeAntag(session, loadout))
+                // We still need this component, at least to keep track of them.
+                EnsureComp<RevolutionaryComponent>(ev.Target);
+        }
 
-        // We still need this component, at least to keep track of them.
-        EnsureComp<RevolutionaryComponent>(ev.Target);
 
         if (ev.User != null)
         {
