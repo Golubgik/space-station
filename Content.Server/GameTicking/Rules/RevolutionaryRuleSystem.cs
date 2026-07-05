@@ -153,6 +153,9 @@ public sealed partial class RevolutionaryRuleSystem : GameRuleSystem<Revolutiona
         if (_player.TryGetSessionByEntity(ev.Target, out var session))
             _antag.TryMakeAntag(session, loadout);
 
+        // We still need this component, at least to keep track of them.
+        EnsureComp<RevolutionaryComponent>(ev.Target);
+
         if (ev.User != null)
         {
             _adminLogManager.Add(LogType.Mind,
@@ -242,6 +245,8 @@ public sealed partial class RevolutionaryRuleSystem : GameRuleSystem<Revolutiona
                     if (_antag.TryRemoveAntag((mindId, mind), antagSpecifier, true))
                         break;
                 }
+
+                EntityManager.RemoveComponent<RevolutionaryComponent>(uid);
 
                 // make it very obvious to the rev they've been deconverted since
                 // they may not see the popup due to antag and/or new player tunnel vision
