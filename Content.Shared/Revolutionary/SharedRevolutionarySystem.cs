@@ -24,7 +24,6 @@ public abstract partial class SharedRevolutionarySystem : EntitySystem
         SubscribeLocalEvent<RevolutionaryComponent, ComponentStartup>(DirtyRevComps);
         SubscribeLocalEvent<HeadRevolutionaryComponent, ComponentStartup>(DirtyRevComps);
         SubscribeLocalEvent<ShowAntagIconsComponent, ComponentStartup>(DirtyRevComps);
-        SubscribeLocalEvent<RevolutionaryComponent, AttemptConvertRevolutionaryEvent>(OnAttemptConvert);
     }
 
     /// <summary>
@@ -100,10 +99,5 @@ public abstract partial class SharedRevolutionarySystem : EntitySystem
         {
             Dirty(uid, comp);
         }
-    }
-
-    private void OnAttemptConvert(Entity<RevolutionaryComponent> ent, ref AttemptConvertRevolutionaryEvent args)
-    {
-        args.Cancelled = true;
     }
 }

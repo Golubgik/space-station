@@ -1,4 +1,3 @@
-using System.Linq;
 using Content.Server.Administration.Logs;
 using Content.Server.Antag;
 using Content.Server.EUI;
@@ -22,12 +21,14 @@ using Content.Shared.Mobs;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Mobs.Systems;
 using Content.Shared.NPC.Systems;
+using Content.Shared.Revolutionary;
 using Content.Shared.Revolutionary.Components;
 using Content.Shared.Roles.Components;
 using Content.Shared.Stunnable;
 using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
+using System.Linq;
 
 namespace Content.Server.GameTicking.Rules;
 
@@ -141,6 +142,10 @@ public sealed partial class RevolutionaryRuleSystem : GameRuleSystem<Revolutiona
 
         if (!HasComp<HumanoidProfileComponent>(ev.Target) && !alwaysConvertible || !_mobState.IsAlive(ev.Target))
             return;
+
+        // He's not doing anything at the moment.
+        var attemptConvertEv = new AttemptConvertRevolutionaryEvent();
+        RaiseLocalEvent(ev.Target, ref attemptConvertEv);
 
         if (!_prototype.Resolve(comp.RevolutionaryLoadout, out var loadout))
             return;

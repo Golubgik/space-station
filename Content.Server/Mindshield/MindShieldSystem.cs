@@ -29,7 +29,6 @@ public sealed partial class MindShieldSystem : EntitySystem
 
         SubscribeLocalEvent<MindShieldImplantComponent, ImplantImplantedEvent>(OnImplantImplanted);
         SubscribeLocalEvent<MindShieldImplantComponent, ImplantRemovedEvent>(OnImplantRemoved);
-        SubscribeLocalEvent<MindShieldComponent, AttemptConvertRevolutionaryEvent>(OnAttemptConvert);
     }
 
     private void OnImplantImplanted(Entity<MindShieldImplantComponent> ent, ref ImplantImplantedEvent ev)
@@ -60,11 +59,6 @@ public sealed partial class MindShieldSystem : EntitySystem
     private void OnImplantRemoved(Entity<MindShieldImplantComponent> ent, ref ImplantRemovedEvent args)
     {
         RemComp<MindShieldComponent>(args.Implanted);
-    }
-
-    private void OnAttemptConvert(Entity<MindShieldComponent> ent, ref AttemptConvertRevolutionaryEvent args)
-    {
-        args.Cancelled = true;
     }
 }
 
