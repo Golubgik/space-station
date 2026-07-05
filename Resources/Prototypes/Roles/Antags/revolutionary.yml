@@ -32,7 +32,7 @@
   - MindRoleRevolutionary
 
 - type: antagSpecifier
-  parent: BaseRev
+  parent: RestrictedAntag # Not BaseRev, as you will not be able to create head of the revolution with the mindshield through the antag panel.
   id: HeadRev
   prefRoles:
   - HeadRev
@@ -41,13 +41,13 @@
     color: CornflowerBlue
     sound: "/Audio/Ambience/Antag/headrev_start.ogg"
   startingGear: HeadRevGear
+  addFactions: 
+  - Revolutionary
   components:
   - type: Revolutionary
   - type: HeadRevolutionary
   mindRoles:
   - MindRoleHeadRevolutionary
-
-# TODO: Make it so creating new revolutionaries uses antag prototypes! This saves a *lot* of boilerplate for conversion antags.
 
 - type: antag
   id: Rev
