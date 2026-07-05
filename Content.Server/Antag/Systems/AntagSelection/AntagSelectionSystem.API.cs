@@ -11,11 +11,7 @@ using Robust.Shared.Audio;
 using Robust.Shared.Enums;
 using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
-using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Linq;
-using static Robust.Shared.Prototypes.EntityPrototype;
 
 namespace Content.Server.Antag;
 

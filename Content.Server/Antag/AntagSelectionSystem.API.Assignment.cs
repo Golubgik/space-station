@@ -7,7 +7,6 @@ using Content.Shared.Humanoid;
 using Content.Shared.Mind;
 using Content.Shared.Players;
 using JetBrains.Annotations;
-using Microsoft.EntityFrameworkCore;
 using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
