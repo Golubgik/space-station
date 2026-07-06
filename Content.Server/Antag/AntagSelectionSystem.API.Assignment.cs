@@ -263,7 +263,6 @@ public sealed partial class AntagSelectionSystem
     /// <summary>
     /// Creating a new antagonist without using the game rules
     /// Doesn't work for ghosts.
-    /// Use it only if you know what you're doing
     /// </summary>
     [PublicAPI]
     public bool TryMakeAntag(ICommonSession player, ProtoId<AntagSpecifierPrototype> proto, bool checkPref = true)

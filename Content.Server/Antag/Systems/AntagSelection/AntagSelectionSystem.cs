@@ -823,7 +823,6 @@ public sealed partial class AntagSelectionSystem : GameRuleSystem<AntagSelection
 
         // The following is where we apply components, equipment, and other changes to our antagonist entity.
         EntityManager.AddComponents(antag, prototype.Components);
-        EntityManager.RemoveComponents(antag, prototype.RemoveComponents);
 
         _npcFaction.AddFactions(antag, prototype.AddFactions);
 
@@ -883,28 +882,31 @@ public sealed partial class AntagSelectionSystem : GameRuleSystem<AntagSelection
 
         dataComp.Antagonists.Remove(key);
 
-        var delData = CheckAntagData(antagData, dataComp.Antagonists);
-
-        if (delData.MindRoles != null)
+        foreach (var (_, data) in dataComp.Antagonists)
         {
-            foreach (var roleId in delData.MindRoles)
+            antagData = ClearAntagData(antagData, data);
+        }
+
+        if (antagData.MindRoles != null)
+        {
+            foreach (var roleId in antagData.MindRoles)
             {
                 EntProtoId<MindRoleComponent> role = new(roleId);
                 _role.MindRemoveRole(playerMind.Owner, role);
             }
         }
 
-        if (playerMind.Comp.OwnedEntity == delData.AntagEntity && removeAntagComponents)
+        if (playerMind.Comp.OwnedEntity == antagData.AntagEntity && removeAntagComponents)
         {
-            EntityManager.RemoveComponents(delData.AntagEntity, delData.AddAntagComponents);
-            EntityManager.AddComponents(delData.AntagEntity, delData.PlayerComponents);
+            EntityManager.RemoveComponents(antagData.AntagEntity, antagData.AddAntagComponents);
+            EntityManager.AddComponents(antagData.AntagEntity, antagData.PlayerComponents);
 
-            foreach (var faction in delData.AddFactions)
+            foreach (var faction in antagData.AddFactions)
             {
-                _npcFaction.RemoveFaction(delData.AntagEntity, faction);
+                _npcFaction.RemoveFaction(antagData.AntagEntity, faction);
             }
 
-            _npcFaction.AddFactions(delData.AntagEntity, delData.RemoveFactions);
+            _npcFaction.AddFactions(antagData.AntagEntity, antagData.RemoveFactions);
         }
 
         return true;

@@ -92,12 +92,6 @@ public sealed partial class AntagSpecifierPrototype : IPrototype, IInheritingPro
     public ComponentRegistry Components = new();
 
     /// <summary>
-    /// Components removed to the player.
-    /// </summary>
-    [DataField]
-    public ComponentRegistry RemoveComponents = new();
-
-    /// <summary>
     /// NPCFactions added to the player.
     /// </summary>
     [DataField]

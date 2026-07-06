@@ -393,12 +393,9 @@ public sealed partial class AntagSelectionSystem
     public AntagData CreateAntagData(AntagSpecifierPrototype antag, EntityUid player)
     {
         // Record all the components that are being deleted and modified
-        var playerComponents = new ComponentRegistry(antag.RemoveComponents);
+        var playerComponents = new ComponentRegistry();
         foreach (var (name, entry) in antag.Components)
         {
-            if (playerComponents.ContainsKey(name))
-                continue;
-
             var compType = entry.Component.GetType();
 
             // We write down the component, if we have it, and it is issued to the antagonists, since then it will be overwritten.
@@ -412,35 +409,32 @@ public sealed partial class AntagSelectionSystem
     /// Deletes duplicate items from comparedData in checkingData
     /// </summary>
     /// <returns>cleared checkingData</returns>
-    public AntagData ClearAntagData(AntagData checkingData, Dictionary<ProtoId<AntagSpecifierPrototype>, AntagData> comparedData)
+    public AntagData ClearAntagData(AntagData checkingData, AntagData comparedData)
     {
         var newAntagData = checkingData;
-        foreach ( (var _, var data) in comparedData)
+        foreach (var comp in comparedData.AddAntagComponents.Keys)
         {
-            foreach (var comp in data.AddAntagComponents.Keys)
-            {
-                newAntagData.AddAntagComponents.Remove(comp);
-                newAntagData.PlayerComponents.Remove(comp);
-            }
-            foreach (var comp in data.PlayerComponents.Keys)
-            {
-                newAntagData.PlayerComponents.Remove(comp);
-            }
-            foreach (var factions in data.AddFactions)
-            {
-                newAntagData.AddFactions.Remove(factions);
-            }
-            foreach (var factions in data.RemoveFactions)
-            {
-                newAntagData.RemoveFactions.Remove(factions);
-            }
-
-            if (data.MindRoles != null && newAntagData.MindRoles != null)
-                foreach (var roles in data.MindRoles)
-                {
-                    newAntagData.MindRoles.Remove(roles);
-                }
+            newAntagData.AddAntagComponents.Remove(comp);
+            newAntagData.PlayerComponents.Remove(comp);
         }
+        foreach (var comp in comparedData.PlayerComponents.Keys)
+        {
+            newAntagData.PlayerComponents.Remove(comp);
+        }
+        foreach (var factions in comparedData.AddFactions)
+        {
+            newAntagData.AddFactions.Remove(factions);
+        }
+        foreach (var factions in comparedData.RemoveFactions)
+        {
+            newAntagData.RemoveFactions.Remove(factions);
+        }
+
+        if (comparedData.MindRoles != null && newAntagData.MindRoles != null)
+            foreach (var roles in comparedData.MindRoles)
+            {
+                newAntagData.MindRoles.Remove(roles);
+            }
         return newAntagData;
     }
 
