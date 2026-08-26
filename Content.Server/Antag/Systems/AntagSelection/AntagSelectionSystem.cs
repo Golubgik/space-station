@@ -26,6 +26,7 @@ using Content.Shared.Random.Helpers;
 using Content.Shared.Roles;
 using Content.Shared.Roles.Components;
 using Content.Shared.Whitelist;
+using JetBrains.Annotations;
 using Robust.Server.Audio;
 using Robust.Server.GameObjects;
 using Robust.Server.Player;
@@ -822,7 +823,7 @@ public sealed partial class AntagSelectionSystem : GameRuleSystem<AntagSelection
             TryRemoveAntag((mind, mindComp), prototype);
 
         // The following is where we apply components, equipment, and other changes to our antagonist entity.
-        EntityManager.AddComponents(antag, prototype.Components);
+        AssignAntagComponents(antag, prototype);
 
         _npcFaction.AddFactions(antag, prototype.AddFactions);
 

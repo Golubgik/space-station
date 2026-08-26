@@ -4,7 +4,7 @@ using Content.Server.Database;
 using Content.Shared.Antag;
 using Content.Shared.Chat;
 using Content.Shared.GameTicking.Components;
-using Content.Shared.Ghost;
+using Content.Shared.Ghost.Components;
 using Content.Shared.Mind;
 using Content.Shared.NPC.Prototypes;
 using Content.Shared.Roles;
